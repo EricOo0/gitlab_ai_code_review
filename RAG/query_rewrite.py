@@ -55,7 +55,7 @@ def extract_query(new_query:str,reason:str)-> str:
 
 llm_tool = ChatOpenAI(
             openai_api_base="https://api.siliconflow.cn/v1/",
-            openai_api_key="sk-xxx",
+            openai_api_key="sk-nsrodawrccxulpmixfrwcogpaotypwhtpjcnxqgfnzafhtdk",
             model_name="deepseek-ai/DeepSeek-V2.5"
 ).bind_tools([extract_query])
 
@@ -63,7 +63,7 @@ class QureyRewrite:
     def __init__(self):
         self.model = ChatOpenAI(
             openai_api_base="https://api.siliconflow.cn/v1/",
-            openai_api_key="sk-xxx",
+            openai_api_key="xxx",
             model_name="Pro/deepseek-ai/DeepSeek-V3"
         )
         self.tool = llm_tool
@@ -74,12 +74,12 @@ class QureyRewrite:
             result = self.model.invoke(prompt)
             print("1.",result,"\n")
             res2 = self.tool.invoke(result.content)
-            print("2.",res2,"\n")
-            print("2.5",res2.tool_calls)
+            # print("2.",res2,"\n")
+            # print("2.5",res2.tool_calls)
             extracted_data = []
             try:
                 for data in res2.tool_calls:
-                    print("3.",data['args'],"\n")
+                    # print("3.",data['args'],"\n")
                     if isinstance(data['args'], str):
                         args_dict = json5.loads(data['args'])
                     else:
@@ -98,4 +98,5 @@ class QureyRewrite:
 if __name__ == "__main__":
     qr = QureyRewrite()
     res = qr.rewrite("查询全球变暖的影响")
-    print(res)
+    for i,r in enumerate(res):
+        print("num:",i,r.get("query"))
