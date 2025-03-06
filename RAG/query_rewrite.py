@@ -55,7 +55,7 @@ def extract_query(new_query:str,reason:str)-> str:
 
 llm_tool = ChatOpenAI(
             openai_api_base="https://api.siliconflow.cn/v1/",
-            openai_api_key="sk-nsrodawrccxulpmixfrwcogpaotypwhtpjcnxqgfnzafhtdk",
+            openai_api_key="sk-xxx",
             model_name="deepseek-ai/DeepSeek-V2.5"
 ).bind_tools([extract_query])
 
@@ -63,7 +63,7 @@ class QureyRewrite:
     def __init__(self):
         self.model = ChatOpenAI(
             openai_api_base="https://api.siliconflow.cn/v1/",
-            openai_api_key="xxx",
+            openai_api_key="sk-xxx",
             model_name="Pro/deepseek-ai/DeepSeek-V3"
         )
         self.tool = llm_tool
