@@ -1,8 +1,9 @@
 # 向量数据库使用milvus pip install -U pymilvus
 
 from pymilvus import MilvusClient,DataType,FieldSchema, CollectionSchema
-
 from sentence_transformers import SentenceTransformer
+from typing import List, Dict, Any
+import numpy as np
 
 class VectorStore:
     def __init__(self):
@@ -10,17 +11,27 @@ class VectorStore:
         self.embedding_model = SentenceTransformer("all-MiniLM-L12-v2") # 384维 ；使用小模型进行embedding，可更换其他 效果更好
         self.dim = 384
 
+    def collection_exists(self, collection_name: str) -> bool:
+        """检查集合是否存在"""
+        return self.client.has_collection(collection_name=collection_name)
+    
+    def drop_collection(self, collection_name: str):
+        """删除集合"""
+        if self.collection_exists(collection_name):
+            self.client.drop_collection(collection_name=collection_name)
+
     # 向量数据库中collection 类比 db 中的表
     def create_collection(self, collection_name):
-        if self.client.has_collection(collection_name=collection_name):
-            self.client.drop_collection(collection_name=collection_name)
+        if self.collection_exists(collection_name):
+            self.drop_collection(collection_name)
+            
         id_field = FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, description="primary id")
-        data_field = FieldSchema(name="doc", dtype=DataType.VARCHAR, description="doc",max_length=2048)
-        embedding_field = FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim= self.dim, description="vector")
+        data_field = FieldSchema(name="doc", dtype=DataType.VARCHAR, description="doc",max_length=65535)  # 增加最大长度
+        embedding_field = FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim=self.dim, description="vector")
         schema = CollectionSchema(fields=[id_field,data_field, embedding_field], auto_id=True, enable_dynamic_field=True, description="desc of a collection")
         self.client.create_collection(
                 collection_name=collection_name,
-                dimension=self.dim,  # The vectors we will use in this demo has 768 dimensions
+                dimension=self.dim,
                 schema=schema
             )
         
@@ -45,22 +56,47 @@ class VectorStore:
                     entity = hit.get("entity")
                     doc = entity.get("doc") if entity else None
                     if doc:
-                        docs.append(doc)
+                        docs.append({"content": doc})  # 修改返回格式以匹配重排序需求
         return docs
         
-    def insert(self,collection, doc):
-        embedding = self.embedding_model.encode(doc)
-        data ={"vector":embedding,"doc":doc}
-        res = self.client.insert(
-        collection_name=collection,
-        data=data
-        )
-        print(res)
+    def insert(self, collection: str, documents: List[Dict[str, Any]]):
+        """
+        批量插入文档
+        Args:
+            collection: 集合名称
+            documents: 文档列表，每个文档是一个字典，包含 content 字段
+        """
+        try:
+            # 提取所有文档内容
+            contents = [doc.get('content', '') for doc in documents]
+            
+            # 批量生成向量
+            embeddings = self.embedding_model.encode(contents)
+            
+            # 准备插入数据
+            data = []
+            for i, content in enumerate(contents):
+                data.append({
+                    "vector": embeddings[i],  # 保持为 numpy 数组
+                    "doc": content
+                })
+            
+            # 执行插入
+            res = self.client.insert(
+                collection_name=collection,
+                data=data
+            )
+            print(f"成功插入 {len(contents)} 个文档")
+            return res
+            
+        except Exception as e:
+            print(f"插入文档时出错: {str(e)}")
+            raise
 
 if __name__=="__main__":
     vs = VectorStore()
     vs.create_collection("demo_collection")
-    vs.insert("demo_collection", "如何评估机器学习的准确率和效率？")
+    vs.insert("demo_collection", [{"content": "如何评估机器学习的准确率和效率？"}])
     res = vs.query("demo_collection", "如何评估机器学习的准确率和效率？")
     print(res)
     # data=[
