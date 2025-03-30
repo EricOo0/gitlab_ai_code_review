@@ -70,3 +70,5 @@ Rag  文件夹下为 rag 操作流的简单demo
 简单演示了 查询 -> 查询改写 -> 知识导入&查询 -> 总结 -> 提问的流程
 
 deep researrch 文件夹为 deep research 的流程演示，关键区别在于工具的使用(还未完成)
+
+transaction 目录增加A股选股指标计算&建议Demo，后续尝试将指标提供给LLM进行选股建议
